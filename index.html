@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>とっとけ・操作モック</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink:#25231f;
+      --muted:#716c63;
+      --line:#ded9cf;
+      --paper:#fffdf8;
+      --soft:#f4f0e7;
+      --accent:#e86f51;
+      --accent-dark:#bd4c35;
+      --blue:#557f8f;
+      --danger:#b33a38;
+      --shadow:0 24px 70px rgba(56,46,32,.18);
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; font-family:ui-rounded,"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif; color:var(--ink); background:radial-gradient(circle at 15% 20%,#f8d9ca 0 12%,transparent 34%),radial-gradient(circle at 85% 80%,#d4e5df 0 10%,transparent 32%),#ede8df; }
+    button,input { font:inherit; }
+    button { cursor:pointer; }
+    .workspace { min-height:100vh; display:grid; grid-template-columns:minmax(260px,360px) 390px minmax(260px,360px); gap:42px; justify-content:center; align-items:center; padding:32px; }
+    .notes { max-width:340px; }
+    .notes h1 { font-family:ui-rounded,"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; font-size:clamp(30px,4vw,48px); line-height:1.2; margin:0 0 18px; font-weight:800; letter-spacing:.01em; }
+    .notes p { color:var(--muted); line-height:1.8; margin:0; }
+    .eyebrow { display:block; margin-bottom:14px; color:var(--accent-dark); font-size:12px; font-weight:800; letter-spacing:.14em; }
+    .phone { width:390px; height:780px; border:7px solid #292725; border-radius:48px; overflow:hidden; background:var(--paper); box-shadow:var(--shadow); position:relative; }
+    .island { position:absolute; z-index:30; top:10px; left:50%; transform:translateX(-50%); width:110px; height:28px; border-radius:18px; background:#292725; }
+    .app { height:100%; display:flex; flex-direction:column; padding-top:28px; }
+    .topbar { height:65px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--line); background:rgba(255,253,248,.96); }
+    .profile { border:0; background:none; color:var(--ink); display:flex; align-items:center; gap:9px; padding:6px 0; text-align:left; }
+    .avatar { width:34px; height:34px; display:grid; place-items:center; border-radius:50%; background:#e7c973; font-size:19px; }
+    .profile strong { display:block; font-size:14px; }
+    .profile small { display:block; color:var(--muted); font-size:11px; margin-top:1px; }
+    .icon-button { width:38px; height:38px; border:0; border-radius:50%; background:var(--soft); color:var(--ink); font-size:18px; }
+    .view { flex:1; min-height:0; overflow:auto; padding:22px 20px 18px; }
+    .view.no-pad { padding:0; overflow:hidden; }
+    .intro { color:var(--muted); font-size:13px; margin:1px 0 13px; }
+    .theme-card { background:#fff; border:1px solid var(--line); border-radius:22px; padding:27px 20px 20px; box-shadow:0 8px 24px rgba(61,53,42,.07); text-align:center; }
+    .theme-card .kind { color:var(--blue); font-size:11px; font-weight:800; letter-spacing:.1em; }
+    .theme-card h2 { font-family:ui-rounded,"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; font-size:25px; line-height:1.5; margin:16px 0 25px; font-weight:800; letter-spacing:.015em; }
+    .primary { width:100%; min-height:50px; border:0; border-radius:14px; background:var(--accent); color:#fff; font-weight:800; box-shadow:0 5px 0 var(--accent-dark); }
+    .primary:active { transform:translateY(3px); box-shadow:0 2px 0 var(--accent-dark); }
+    .secondary { width:100%; min-height:48px; border:1px solid var(--line); border-radius:14px; background:#fff; color:var(--ink); font-weight:700; }
+    .text-button { border:0; background:none; color:var(--muted); font-weight:700; padding:16px 8px 4px; }
+    .home-links { margin-top:18px; border-top:1px solid var(--line); }
+    .home-link { width:100%; min-height:56px; display:flex; align-items:center; justify-content:space-between; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--ink); text-align:left; font-weight:700; }
+    .bottom-nav { height:66px; display:flex; border-top:1px solid var(--line); background:#fff; }
+    .bottom-nav button { flex:1; border:0; background:none; color:var(--muted); font-size:12px; font-weight:700; }
+    .bottom-nav button.active { color:var(--accent-dark); }
+    .camera { height:100%; display:flex; flex-direction:column; background:#1d211f; color:#fff; }
+    .camera-head { height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 17px; }
+    .camera-head button { border:0; color:#fff; background:rgba(255,255,255,.12); border-radius:20px; padding:8px 11px; }
+    .camera-preview { flex:1; position:relative; overflow:hidden; display:grid; place-items:center; background:radial-gradient(circle at 50% 35%,#d9b28a 0 13%,transparent 14%),radial-gradient(ellipse at 50% 67%,#7f9f84 0 26%,transparent 27%),linear-gradient(155deg,#9ec6c0,#e2cfaa); }
+    .camera-preview::before,.camera-preview::after { content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.25); }
+    .camera-preview::before { width:120px; height:120px; left:-42px; top:42px; }
+    .camera-preview::after { width:160px; height:160px; right:-54px; bottom:55px; }
+    .caption { position:absolute; z-index:2; left:15px; right:15px; bottom:17px; padding:15px 15px 13px; border-radius:12px; background:rgba(15,15,15,.82); box-shadow:0 3px 16px rgba(0,0,0,.28); }
+    .caption strong { display:block; font-size:20px; line-height:1.35; margin-bottom:7px; font-weight:800; letter-spacing:.01em; }
+    .caption small { display:block; opacity:.92; font-size:12px; font-weight:700; }
+    .camera-tip { position:absolute; z-index:3; top:15px; left:15px; right:15px; padding:10px 12px; border-radius:11px; background:rgba(255,253,248,.92); color:#4f4638; font-size:12px; line-height:1.45; font-weight:700; box-shadow:0 3px 14px rgba(0,0,0,.16); }
+    .camera-controls { height:135px; display:grid; place-items:center; align-content:center; gap:8px; }
+    .timer { font-variant-numeric:tabular-nums; font-size:13px; opacity:.8; }
+    .record { width:66px; height:66px; padding:5px; border:3px solid #fff; border-radius:50%; background:transparent; }
+    .record span { display:block; width:100%; height:100%; border-radius:50%; background:#f14b4b; transition:.2s; }
+    .record.recording span { border-radius:10px; transform:scale(.55); }
+    .review-video { height:370px; margin:-22px -20px 20px; display:grid; place-items:center; position:relative; background:linear-gradient(155deg,#9ec6c0,#e2cfaa); }
+    .play { width:64px; height:64px; border:0; border-radius:50%; background:rgba(255,255,255,.9); color:var(--ink); font-size:25px; padding-left:6px; }
+    .review h2 { text-align:center; font-size:19px; margin:10px 0 17px; }
+    .stack { display:grid; gap:12px; }
+    .center-state { height:100%; display:grid; place-items:center; text-align:center; padding:35px; }
+    .center-state h2 { margin:22px 0 9px; font-size:22px; }
+    .center-state p { color:var(--muted); line-height:1.65; font-size:14px; }
+    .spinner { width:60px; height:60px; border:6px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:auto; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .check { width:70px; height:70px; display:grid; place-items:center; border-radius:50%; background:#dcebdc; color:#2b713c; font-size:36px; margin:auto; }
+    .error-mark { width:70px; height:70px; display:grid; place-items:center; border-radius:50%; background:#f5dddd; color:var(--danger); font-size:34px; margin:auto; }
+    .records h2 { font-size:18px; margin:1px 0 12px; }
+    .compare-card { border:1px solid #d9c793; background:#fffaf0; border-radius:17px; padding:16px; margin-bottom:24px; }
+    .compare-card.new { animation:highlight 1.8s ease; }
+    @keyframes highlight { 0%,50% { box-shadow:0 0 0 5px rgba(232,111,81,.28); } }
+    .compare-card strong { display:block; margin-bottom:7px; }
+    .meta { color:var(--muted); font-size:12px; }
+    .compare-link { float:right; border:0; background:none; color:var(--accent-dark); font-weight:800; margin-top:10px; }
+    .record-row { width:100%; display:grid; grid-template-columns:108px 1fr; gap:12px; padding:12px 0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--ink); text-align:left; }
+    .thumb { height:74px; border-radius:10px; background:linear-gradient(155deg,#9ec6c0,#e2cfaa); display:flex; align-items:flex-end; overflow:hidden; color:#fff; }
+    .thumb-caption { width:100%; min-height:31px; display:flex; align-items:center; padding:5px 7px; background:rgba(15,15,15,.82); font-size:9px; line-height:1.2; font-weight:800; }
+    .record-row strong { display:block; font-size:13px; margin:5px 0 7px; }
+    .detail-video { height:350px; margin:-22px -20px 0; position:relative; display:grid; place-items:center; background:linear-gradient(155deg,#9ec6c0,#e2cfaa); }
+    .detail-caption { position:absolute; left:13px; right:13px; bottom:13px; padding:13px; border-radius:11px; background:rgba(15,15,15,.82); color:#fff; }
+    .detail-caption strong { display:block; font-size:18px; line-height:1.35; margin-bottom:5px; }
+    .detail-caption small { font-size:11px; font-weight:700; opacity:.92; }
+    .detail-info { padding:18px 0 5px; }
+    .detail-info h2 { margin:0 0 7px; font-size:20px; line-height:1.4; }
+    .detail-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+    .detail-actions button { min-height:48px; border:1px solid var(--line); border-radius:13px; background:#fff; color:var(--ink); font-weight:800; }
+    .detail-actions .danger { grid-column:1/-1; color:var(--danger); }
+    .settings-group { margin-bottom:22px; }
+    .settings-group h2 { margin:0 0 8px; color:var(--muted); font-size:12px; letter-spacing:.08em; }
+    .settings-row { width:100%; min-height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 13px; border:0; border-bottom:1px solid var(--line); background:#fff; color:var(--ink); text-align:left; font-weight:700; }
+    .settings-row:first-of-type { border-radius:14px 14px 0 0; }
+    .settings-row:last-of-type { border-bottom:0; border-radius:0 0 14px 14px; }
+    .export-summary { padding:18px; border:1px solid var(--line); border-radius:17px; background:#fff; margin-bottom:18px; }
+    .export-summary strong { display:block; margin-bottom:7px; font-size:18px; }
+    .export-summary p { margin:0; color:var(--muted); font-size:13px; line-height:1.55; }
+    .progress-track { height:9px; overflow:hidden; border-radius:8px; background:var(--line); margin:23px 0 9px; }
+    .progress-fill { height:100%; width:72%; background:var(--accent); animation:progress 1.6s ease-in-out forwards; }
+    @keyframes progress { from { width:8%; } to { width:100%; } }
+    .result-list { margin:18px 0; text-align:left; }
+    .result-row { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); font-size:13px; }
+    .warning-box { margin:14px 0; padding:12px 13px; border-radius:12px; background:#fff2cf; color:#6d5518; font-size:12px; line-height:1.55; font-weight:700; }
+    .modal-backdrop { position:absolute; z-index:50; inset:0; display:grid; align-items:end; background:rgba(30,27,24,.45); padding:18px; }
+    .modal { background:#fff; border-radius:22px; padding:22px 18px 18px; box-shadow:var(--shadow); }
+    .modal h3 { margin:0 0 9px; text-align:center; }
+    .modal p { color:var(--muted); font-size:13px; line-height:1.6; text-align:center; }
+    .custom-form label { display:block; font-size:13px; font-weight:800; margin-bottom:9px; }
+    .custom-form input { width:100%; height:52px; border:1px solid var(--line); border-radius:13px; padding:0 13px; margin-bottom:15px; }
+    .choice-intro { margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.55; }
+    .choice-list { display:grid; gap:10px; }
+    .choice-section { margin:22px 0 9px; color:var(--muted); font-size:12px; font-weight:800; letter-spacing:.06em; }
+    .choice { width:100%; min-height:76px; display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; padding:14px 14px 14px 16px; border:1px solid var(--line); border-radius:16px; background:#fff; color:var(--ink); text-align:left; }
+    .choice:hover { border-color:#c6bfb2; background:#fffefa; }
+    .choice strong { display:block; font-size:14px; line-height:1.45; }
+    .choice small { display:block; margin-bottom:5px; color:var(--blue); font-size:10px; font-weight:800; letter-spacing:.08em; }
+    .choice .arrow { color:var(--muted); font-size:20px; }
+    .lab { align-self:center; max-width:330px; padding:20px; border:1px dashed rgba(37,35,31,.28); border-radius:18px; background:rgba(255,255,255,.38); }
+    .lab h2 { font-size:14px; margin:0 0 12px; }
+    .lab p { font-size:12px; line-height:1.55; margin:10px 0 0; }
+    .lab label { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:700; }
+    .reload-button { width:100%; min-height:44px; margin-bottom:16px; border:1px solid rgba(37,35,31,.28); border-radius:12px; background:#fff; color:var(--ink); font-weight:800; }
+    .state-chip { display:inline-block; margin-top:14px; padding:6px 9px; border-radius:20px; background:#fff; font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .toast { position:absolute; z-index:70; left:50%; bottom:82px; transform:translateX(-50%); width:max-content; max-width:88%; padding:10px 14px; border-radius:20px; background:#292725; color:#fff; font-size:12px; box-shadow:0 8px 26px rgba(0,0,0,.2); animation:toast 2.4s both; }
+    @keyframes toast { 0%{opacity:0;transform:translate(-50%,8px)} 12%,82%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0} }
+    @media (max-width:1050px) { .workspace { grid-template-columns:390px; padding:22px 10px; } .notes,.lab { display:none; } }
+    @media (max-width:420px) { body { background:var(--paper); } .workspace { display:block; padding:0; } .phone { width:100%; height:100dvh; border:0; border-radius:0; box-shadow:none; } .island { display:none; } .app { padding-top:0; } }
+    body.review-mode .workspace { grid-template-columns:390px; padding:28px; }
+    body.review-mode .notes,
+    body.review-mode .lab { display:none; }
+    body.review-mode .phone { box-shadow:0 28px 90px rgba(56,46,32,.24); }
+    @media (prefers-reduced-motion:reduce) { * { animation-duration:.01ms!important; animation-iteration-count:1!important; } }
+  </style>
+</head>
+<body>
+  <main class="workspace">
+    <section class="notes">
+      <span class="eyebrow">INTERACTIVE PROTOTYPE</span>
+      <h1>撮って、守って、あとで変化に気づく。</h1>
+      <p><strong id="mockAppName">とっとけ</strong>のiOS操作モックです。中央の画面を操作して、撮影から保存、記録の振り返りまで試せます。</p>
+    </section>
+
+    <section class="phone" aria-label="アプリ操作モック">
+      <div class="island"></div>
+      <div id="app" class="app"></div>
+    </section>
+
+    <aside class="lab">
+      <button id="reloadButton" class="reload-button" type="button">↻ 最新版をリロード</button>
+      <h2>モック用テスト設定</h2>
+      <label><input id="failToggle" type="checkbox"> 次の動画生成を失敗させる</label>
+      <label style="margin-top:10px"><input id="partialToggle" type="checkbox"> 一括書き出しを部分失敗させる</label>
+      <label style="margin-top:10px"><input id="capacityToggle" type="checkbox"> 空き容量不足にする</label>
+      <label style="margin-top:10px"><input id="captureFailToggle" type="checkbox"> 録画後の一時保存を失敗させる</label>
+      <label style="margin-top:10px"><input id="captureLostToggle" type="checkbox"> 元ファイルも復旧不能にする</label>
+      <label style="margin-top:10px"><input id="renderCorruptToggle" type="checkbox"> テロップ動画を破損させる</label>
+      <label style="margin-top:10px"><input id="originalCorruptToggle" type="checkbox"> 元動画を破損させる</label>
+      <label style="margin-top:10px"><input id="deleteFailToggle" type="checkbox"> 記録削除を途中で失敗させる</label>
+      <label style="margin-top:10px"><input id="singleExportFailToggle" type="checkbox"> 個別書き出しを失敗させる</label>
+      <span id="stateChip" class="state-chip">state: home</span>
+      <p>失敗時は元動画を残し、「再試行」か「削除して終了」だけを表示します。</p>
+    </aside>
+  </main>
+
+  <script>
+    const app = document.getElementById('app');
+    const appDisplayName = 'とっとけ';
+    const reviewMode = new URLSearchParams(window.location.search).get('review') === '1';
+    document.body.classList.toggle('review-mode', reviewMode);
+    document.title = `${appDisplayName}・操作モック`;
+    document.getElementById('mockAppName').textContent = appDisplayName;
+    const reloadButton = document.getElementById('reloadButton');
+    const stateChip = document.getElementById('stateChip');
+    const failToggle = document.getElementById('failToggle');
+    const partialToggle = document.getElementById('partialToggle');
+    const capacityToggle = document.getElementById('capacityToggle');
+    const captureFailToggle = document.getElementById('captureFailToggle');
+    const captureLostToggle = document.getElementById('captureLostToggle');
+    const renderCorruptToggle = document.getElementById('renderCorruptToggle');
+    const originalCorruptToggle = document.getElementById('originalCorruptToggle');
+    const deleteFailToggle = document.getElementById('deleteFailToggle');
+    const singleExportFailToggle = document.getElementById('singleExportFailToggle');
+    reloadButton.addEventListener('click', () => window.location.reload());
+    const recommendedTheme = 'いま好きな食べ物は？';
+    const fixedPointThemes = [
+      {id:'situation.entrance.before_outing.v1', text:'玄関で、お出かけ前の姿を残そう', guidance:'表札や住所が映らない向きがおすすめです'},
+      {id:'situation.usual_chair.v1', text:'いつもの椅子にいる姿を残そう'},
+      {id:'situation.waking_up.usual_place.v1', text:'いつもの場所で、起きたばかりの姿を残そう'},
+      {id:'situation.putting_on_shoes.v1', text:'靴を履いて出かけるところを残そう', guidance:'表札や住所が映らない向きがおすすめです'},
+      {id:'situation.parent_and_child.usual_place.v1', text:'いつもの場所で、親子で並んだ姿を残そう'}
+    ];
+    let currentTheme = recommendedTheme;
+    let currentPromptID = 'question.favorite_food.v1';
+    let currentGuidance = '';
+    let screen = 'home';
+    let recording = false;
+    let elapsed = 0;
+    let timerId = null;
+    let modal = null;
+    let justSaved = false;
+    let selectedRecord = {theme:'いま好きな食べ物は？',date:'今日',age:'2歳4か月',originalUnavailable:false};
+    const deletedRecordDates = new Set();
+    let bulkExportPartial = false;
+    let bulkExportCount = 3;
+    let capacityContext = 'record';
+
+    const topbar = () => `<header class="topbar"><button class="profile" data-action="profile"><span class="avatar">☀</span><span><strong>ひなた⌄</strong><small>2歳4か月</small></span></button><button class="icon-button" data-action="settings" aria-label="設定">⚙</button></header>`;
+    const nav = active => `<nav class="bottom-nav"><button class="${active==='home'?'active':''}" data-action="home">⌂<br>ホーム</button><button class="${active==='records'?'active':''}" data-action="records">▣<br>ライブラリ</button></nav>`;
+
+    function homeView() {
+      return `${topbar()}<section class="view"><p class="intro">とっとけ、あとで宝物になるぞ</p><article class="theme-card"><h2>${currentTheme}</h2><button class="primary" data-action="open-camera">この内容で撮る</button></article><div class="home-links"><button class="home-link" data-action="choose">一覧から選んで撮る <span>›</span></button><button class="home-link" data-action="custom">自分で入力して撮る <span>›</span></button></div></section>${nav('home')}`;
+    }
+
+    function cameraView() {
+      const remaining = 120 - elapsed;
+      const mm = String(Math.floor(remaining/60)).padStart(2,'0');
+      const ss = String(remaining%60).padStart(2,'0');
+      const guidance = currentGuidance && !recording ? `<div class="camera-tip">ⓘ ${currentGuidance}</div>` : '';
+      return `<section class="view no-pad camera"><div class="camera-head"><button data-action="cancel-camera">×</button><strong>${recording?'録画中':'録画'}</strong><button data-action="flip">↺ カメラ</button></div><div class="camera-preview">${guidance}<div class="caption"><strong>${currentTheme}</strong><small>2歳4か月・${appDisplayName}</small></div></div><div class="camera-controls"><span class="timer">${mm}:${ss}</span><button class="record ${recording?'recording':''}" data-action="record" aria-label="${recording?'録画停止':'録画開始'}"><span></span></button></div></section>`;
+    }
+
+    function reviewView() {
+      return `<header class="topbar"><span></span><strong>撮影を確認</strong><span></span></header><section class="view review"><div class="review-video"><button class="play" data-action="play" aria-label="再生">▶</button></div><h2>この動画を保存しますか？</h2><div class="stack"><button class="primary" data-action="save">保存する</button><button class="secondary" data-action="retake">撮り直す</button></div><p class="intro" style="text-align:center;margin-top:15px">元の動画は一時保存されています</p></section>`;
+    }
+
+    function captureSavingView() {
+      return `<section class="center-state"><div><div class="spinner"></div><h2>動画を保護しています</h2><p>撮影した元動画を安全な場所へ<br>一時保存しています。</p></div></section>`;
+    }
+
+    function captureFailedView() {
+      return `<section class="center-state"><div style="width:100%"><div class="error-mark">!</div><h2>動画を一時保存できませんでした</h2><p>撮影したデータはまだ残っています。<br>もう一度お試しください。</p><div class="stack" style="margin-top:22px"><button class="primary" data-action="retry-capture-save">もう一度試す</button><button class="secondary" data-action="delete-capture">この動画を削除して終了</button></div></div></section>`;
+    }
+
+    function captureLostView() {
+      return `<section class="center-state"><div style="width:100%"><div class="error-mark">!</div><h2>動画を復旧できませんでした</h2><p>撮影した動画を読み取れず、保存できませんでした。申し訳ありません。</p><div class="stack" style="margin-top:22px"><button class="primary" data-action="retake-after-loss">もう一度撮る</button><button class="secondary" data-action="home-after-loss">ホームへ戻る</button></div></div></section>`;
+    }
+
+    function renderingView() {
+      return `<section class="center-state"><div><div class="spinner"></div><h2>保存しています</h2><p>テロップ入り動画を作成し、<br>最後まで再生できるか確認しています。</p></div></section>`;
+    }
+
+    function completeView() {
+      return `<section class="center-state"><div style="width:100%"><div class="check">✓</div><h2>保存できました</h2><p>元の動画とテロップ入り動画を<br>安全に保存しました。</p><button class="primary" data-action="finish" style="margin-top:22px">完了</button></div></section>`;
+    }
+
+    function failedView() {
+      return `<section class="center-state"><div style="width:100%"><div class="error-mark">!</div><h2>保存できませんでした</h2><p>元の動画は残っています。<br>もう一度お試しください。</p><div class="stack" style="margin-top:22px"><button class="primary" data-action="retry">もう一度試す</button><button class="secondary" data-action="delete-pending" style="color:var(--danger)">この動画を削除して終了</button></div></div></section>`;
+    }
+
+    function recordsView() {
+      const row = (theme,date,age) => deletedRecordDates.has(date) ? '' : `<button class="record-row" data-action="open-record" data-theme="${theme}" data-date="${date}" data-age="${age}"><div class="thumb"><span class="thumb-caption">${theme}</span></div><div><strong>${theme}</strong><span class="meta">${date}・${age}</span></div></button>`;
+      const entranceTheme = fixedPointThemes[0].text;
+      const rows = row(currentTheme,'今日','2歳4か月') + row(entranceTheme,'2026/5/3','2歳0か月') + row(entranceTheme,'2025/2/16','0歳9か月') + row('お気に入りの歌','2026/8/10','2歳3か月') + row('いま好きな食べ物は？','2026/2/21','1歳10か月');
+      const compareCount = 3 - (deletedRecordDates.has('今日') ? 1 : 0) - (deletedRecordDates.has('2026/2/21') ? 1 : 0);
+      const currentComparison = compareCount >= 2 ? `<article class="compare-card ${justSaved?'new':''}"><strong>${currentTheme}</strong><span class="meta">${compareCount}本・1歳8か月〜2歳4か月</span><button class="compare-link" data-action="compare" data-count="${compareCount}">見比べる ›</button><div style="clear:both"></div></article>` : '';
+      const fixedPointComparison = `<article class="compare-card"><strong>${entranceTheme}</strong><span class="meta">同じ内容で2本・0歳9か月〜2歳0か月</span><button class="compare-link" data-action="compare" data-count="2">見比べる ›</button><div style="clear:both"></div></article>`;
+      const comparison = `<h2>変化を見比べる</h2>${fixedPointComparison}${currentComparison}`;
+      return `${topbar()}<section class="view records">${comparison}<h2>すべての記録</h2>${rows}</section>${nav('records')}`;
+    }
+
+    function recordDetailView() {
+      const warning = selectedRecord.originalUnavailable ? `<div class="warning-box">元動画を読み取れません。テロップ入り動画の再生と書き出しはできますが、再生成はできません。</div>` : '';
+      return `<header class="topbar"><button class="icon-button" data-action="records" aria-label="戻る">‹</button><strong>記録</strong><span></span></header><section class="view"><div class="detail-video"><button class="play" data-action="play" aria-label="再生">▶</button><div class="detail-caption"><strong>${selectedRecord.theme}</strong><small>${selectedRecord.age}・${appDisplayName}</small></div></div><div class="detail-info"><h2>${selectedRecord.theme}</h2><span class="meta">${selectedRecord.date}・${selectedRecord.age}</span>${warning}<div class="detail-actions"><button data-action="play">▶ 再生</button><button data-action="export-record">↑ 書き出す</button><button class="danger" data-action="delete-record">この記録を削除</button></div></div></section>`;
+    }
+
+    function repairingRecordView() {
+      return `<section class="center-state"><div><div class="spinner"></div><h2>動画を修復しています</h2><p>元動画からテロップ入り動画を<br>もう一度作成しています。</p></div></section>`;
+    }
+
+    function corruptRecordView() {
+      return `<section class="center-state"><div style="width:100%"><div class="error-mark">!</div><h2>この動画を再生できません</h2><p>元動画とテロップ入り動画の両方を読み取れず、修復できませんでした。</p><div class="stack" style="margin-top:22px"><button class="primary" data-action="delete-corrupt-record" style="background:var(--danger);box-shadow:none">この記録を削除</button><button class="secondary" data-action="records">ライブラリへ戻る</button></div></div></section>`;
+    }
+
+    function deleteFailedView() {
+      return `<section class="center-state"><div style="width:100%"><div class="error-mark">!</div><h2>記録を削除できませんでした</h2><p>一部のデータが残っています。整合性が戻るまで、この記録はライブラリに表示しません。</p><div class="stack" style="margin-top:22px"><button class="primary" data-action="retry-record-delete">削除をもう一度試す</button><button class="secondary" data-action="records">ライブラリへ戻る</button></div></div></section>`;
+    }
+
+    function exportFailedView() {
+      return `<section class="center-state"><div style="width:100%"><div class="error-mark">!</div><h2>動画を書き出せませんでした</h2><p>アプリ内の動画は残っています。保存先を確認して、もう一度お試しください。</p><div class="stack" style="margin-top:22px"><button class="primary" data-action="retry-record-export">もう一度試す</button><button class="secondary" data-action="record-detail-back">記録へ戻る</button></div></div></section>`;
+    }
+
+    function settingsView() {
+      return `<header class="topbar"><button class="icon-button" data-action="home" aria-label="閉じる">×</button><strong>設定</strong><span></span></header><section class="view"><div class="settings-group"><h2>お子さん</h2><button class="settings-row" data-action="profile"><span>プロフィール管理</span><span>›</span></button></div><div class="settings-group"><h2>記録</h2><button class="settings-row" data-action="bulk-export"><span>動画をまとめて書き出す</span><span>›</span></button></div><div class="settings-group"><h2>アプリ</h2><button class="settings-row" data-action="notifications"><span>通知</span><span>›</span></button><button class="settings-row" data-action="privacy"><span>プライバシーについて</span><span>›</span></button></div></section>`;
+    }
+
+    function bulkExportView() {
+      const count = 3 - deletedRecordDates.size;
+      bulkExportCount = Math.max(count,0);
+      const disabled = bulkExportCount === 0 ? ' disabled' : '';
+      return `<header class="topbar"><button class="icon-button" data-action="settings" aria-label="戻る">‹</button><strong>まとめて書き出す</strong><span></span></header><section class="view"><div class="export-summary"><strong>ひなたの動画 ${bulkExportCount}本</strong><p>テロップ入り動画を書き出します。元動画とアプリ内の記録はそのまま残ります。</p></div><div class="stack"><button class="primary" data-action="bulk-photo"${disabled}>写真アプリに保存</button><button class="secondary" data-action="bulk-file"${disabled}>“ファイル”に保存</button></div></section>`;
+    }
+
+    function bulkProgressView() {
+      return `<section class="center-state"><div style="width:100%"><div class="spinner"></div><h2>動画を書き出しています</h2><p>アプリを閉じずにお待ちください。</p><div class="progress-track"><div class="progress-fill"></div></div><span class="meta">${bulkExportCount}本を処理中</span></div></section>`;
+    }
+
+    function bulkResultView() {
+      const title = bulkExportPartial ? '一部を書き出せませんでした' : '書き出しが完了しました';
+      const mark = bulkExportPartial ? '<div class="error-mark">!</div>' : '<div class="check">✓</div>';
+      const rows = bulkExportPartial ? `<div class="result-row"><span>保存できた動画</span><strong>${Math.max(bulkExportCount-1,0)}本</strong></div><div class="result-row"><span>保存できなかった動画</span><strong style="color:var(--danger)">1本</strong></div>` : `<div class="result-row"><span>保存した動画</span><strong>${bulkExportCount}本</strong></div>`;
+      return `<section class="center-state"><div style="width:100%">${mark}<h2>${title}</h2><div class="result-list">${rows}</div><div class="stack">${bulkExportPartial?'<button class="primary" data-action="retry-bulk">失敗した動画をもう一度試す</button>':''}<button class="secondary" data-action="finish-bulk">完了</button></div></div></section>`;
+    }
+
+    function capacityView() {
+      const copy = capacityContext === 'record'
+        ? ['撮影するための空き容量が足りません','空き容量を増やしてから、もう一度確認してください。']
+        : capacityContext === 'save'
+          ? ['保存するための空き容量が足りません','元の動画は残っています。空き容量を増やしてから、もう一度お試しください。']
+          : ['書き出すための空き容量が足りません','アプリ内の動画はそのまま残っています。空き容量を増やしてから、もう一度お試しください。'];
+      return `<section class="center-state"><div style="width:100%"><div class="error-mark">!</div><h2>${copy[0]}</h2><p>${copy[1]}</p><div class="stack" style="margin-top:22px"><button class="primary" data-action="recheck-capacity">空き容量をもう一度確認</button><button class="secondary" data-action="capacity-back">戻る</button></div></div></section>`;
+    }
+
+    function customView() {
+      return `<header class="topbar"><button class="icon-button" data-action="home" aria-label="戻る">‹</button><strong>自分で入力して撮る</strong><span></span></header><section class="view"><form class="custom-form" id="customForm"><label for="customInput">動画に残したい内容</label><input id="customInput" maxlength="40" placeholder="例：最近覚えた言葉を話して" required><button class="primary" type="submit">撮影へ進む</button></form></section>`;
+    }
+
+    function chooseView() {
+      const choices = [
+        {kind:'質問',id:'question.favorite_food.v1',text:'いま好きな食べ物は？'},
+        {kind:'質問',id:'question.play_today.v1',text:'今日は何して遊びたい？'},
+        {kind:'質問',id:'question.outing_companion.v1',text:'だれと一緒にお出かけしたい？'},
+        {kind:'日常のようす',id:'situation.favorite_toy.v1',text:'お気に入りのおもちゃを見せて'},
+        {kind:'日常のようす',id:'situation.recent_song.v1',text:'最近覚えた歌をうたって'},
+        {kind:'日常のようす',id:'situation.dressing.v1',text:'自分でお着替えするところ'}
+      ];
+      const row = ({kind,id,text,guidance=''}) => `<button class="choice" data-action="select-theme" data-theme="${text}" data-prompt-id="${id}" data-guidance="${guidance}"><span><small>${kind}</small><strong>${text}</strong></span><span class="arrow">›</span></button>`;
+      const rows = choices.map(row).join('');
+      const fixedPointRows = fixedPointThemes.map(theme => row({...theme,kind:'定点シチュエーション'})).join('');
+      return `<header class="topbar"><button class="icon-button" data-action="home" aria-label="戻る">‹</button><strong>一覧から選んで撮る</strong><span></span></header><section class="view"><p class="choice-intro">ひなたさんの年齢に合う内容です。<br>撮りたいものを選んでください。</p><div class="choice-list">${rows}</div><h2 class="choice-section">0歳から、同じ場所で残す</h2><p class="choice-intro">同じ内容で繰り返すと、姿や動きの変化を見比べられます。</p><div class="choice-list">${fixedPointRows}</div></section>`;
+    }
+
+    function modalView() {
+      if (modal === 'retake') return `<div class="modal-backdrop"><div class="modal"><h3>撮り直しますか？</h3><p>いま撮った動画を削除します。<br>この操作は取り消せません。</p><div class="stack"><button class="primary" data-action="confirm-retake">削除して撮り直す</button><button class="secondary" data-action="close-modal">戻る</button></div></div></div>`;
+      if (modal === 'delete') return `<div class="modal-backdrop"><div class="modal"><h3>動画を削除しますか？</h3><p>一時保存した元動画と生成途中のデータが失われ、記録には残りません。</p><div class="stack"><button class="primary" data-action="confirm-delete" style="background:var(--danger);box-shadow:none">削除して終了</button><button class="secondary" data-action="close-modal">戻る</button></div></div></div>`;
+      if (modal === 'export') return `<div class="modal-backdrop"><div class="modal"><h3>動画を書き出す</h3><p>テロップ入り動画を書き出します。元動画はアプリ内に残ります。</p><div class="stack"><button class="primary" data-action="export-photo">写真アプリに保存</button><button class="secondary" data-action="export-file">“ファイル”に保存</button><button class="text-button" data-action="close-modal">キャンセル</button></div></div></div>`;
+      if (modal === 'delete-record') return `<div class="modal-backdrop"><div class="modal"><h3>この記録を削除しますか？</h3><p>元動画、テロップ入り動画、記録情報がすべて削除されます。書き出し済みの動画は削除されません。</p><div class="stack"><button class="primary" data-action="confirm-record-delete" style="background:var(--danger);box-shadow:none">記録を削除</button><button class="secondary" data-action="close-modal">キャンセル</button></div></div></div>`;
+      if (modal === 'delete-capture') return `<div class="modal-backdrop"><div class="modal"><h3>撮影した動画を削除しますか？</h3><p>まだ正式な記録として保存されていません。削除すると元に戻せません。</p><div class="stack"><button class="primary" data-action="confirm-capture-delete" style="background:var(--danger);box-shadow:none">削除して終了</button><button class="secondary" data-action="close-modal">戻る</button></div></div></div>`;
+      return '';
+    }
+
+    function render() {
+      const views = {home:homeView,camera:cameraView,review:reviewView,rendering:renderingView,complete:completeView,failed:failedView,records:recordsView,custom:customView,choose:chooseView,'record-detail':recordDetailView,'record-repairing':repairingRecordView,'record-corrupt':corruptRecordView,'delete-failed':deleteFailedView,'export-failed':exportFailedView,settings:settingsView,'bulk-export':bulkExportView,'bulk-progress':bulkProgressView,'bulk-result':bulkResultView,capacity:capacityView,'capture-saving':captureSavingView,'capture-failed':captureFailedView,'capture-lost':captureLostView};
+      app.innerHTML = views[screen]() + modalView();
+      stateChip.textContent = `state: ${screen}${recording?' / recording':''}`;
+      const form = document.getElementById('customForm');
+      if (form) form.addEventListener('submit', event => { event.preventDefault(); currentTheme = document.getElementById('customInput').value.trim(); capacityContext='record'; capacityToggle.checked ? go('capacity') : go('camera'); });
+    }
+
+    function go(next) {
+      screen = next;
+      modal = null;
+      render();
+    }
+
+    function startRecording() {
+      recording = true;
+      elapsed = 0;
+      render();
+      timerId = setInterval(() => {
+        elapsed += 1;
+        if (elapsed >= 120) stopRecording(); else render();
+      },1000);
+    }
+
+    function stopRecording() {
+      clearInterval(timerId);
+      timerId = null;
+      recording = false;
+      go('capture-saving');
+      setTimeout(() => {
+        if (captureFailToggle.checked) {
+          const lost = captureLostToggle.checked;
+          captureFailToggle.checked = false;
+          captureLostToggle.checked = false;
+          go(lost ? 'capture-lost' : 'capture-failed');
+        } else go('review');
+      },900);
+    }
+
+    function runGeneration() {
+      go('rendering');
+      setTimeout(() => {
+        if (failToggle.checked) {
+          failToggle.checked = false;
+          go('failed');
+        } else {
+          justSaved = true;
+          go('complete');
+        }
+      },1800);
+    }
+
+    function toast(message) {
+      const old = document.querySelector('.toast');
+      if (old) old.remove();
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = message;
+      document.querySelector('.phone').appendChild(el);
+      setTimeout(() => el.remove(),2400);
+    }
+
+    app.addEventListener('click', event => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      if (action === 'home') { justSaved=false; currentTheme=recommendedTheme; currentPromptID='question.favorite_food.v1'; currentGuidance=''; go('home'); }
+      if (action === 'records') go('records');
+      if (action === 'open-camera') { capacityContext='record'; capacityToggle.checked ? go('capacity') : go('camera'); }
+      if (action === 'custom') go('custom');
+      if (action === 'choose') go('choose');
+      if (action === 'select-theme') { currentTheme=button.dataset.theme; currentPromptID=button.dataset.promptId; currentGuidance=button.dataset.guidance || ''; capacityContext='record'; capacityToggle.checked ? go('capacity') : go('camera'); }
+      if (action === 'settings') go('settings');
+      if (action === 'profile') toast('プロフィール：ひなた（2歳4か月）');
+      if (action === 'flip') toast('カメラを切り替えました');
+      if (action === 'cancel-camera') { recording ? stopRecording() : go('home'); }
+      if (action === 'record') recording ? stopRecording() : startRecording();
+      if (action === 'play') toast('撮影した動画を再生中');
+      if (action === 'save' || action === 'retry') { capacityContext='save'; capacityToggle.checked ? go('capacity') : runGeneration(); }
+      if (action === 'retake') { modal='retake'; render(); }
+      if (action === 'delete-pending') { modal='delete'; render(); }
+      if (action === 'close-modal') { modal=null; render(); }
+      if (action === 'confirm-retake') { elapsed=0; go('camera'); }
+      if (action === 'confirm-delete') { currentTheme=recommendedTheme; go('home'); toast('一時動画を削除しました'); }
+      if (action === 'finish') go('records');
+      if (action === 'compare') toast(`${button.dataset.count || 3}本の動画を古い順に再生します`);
+      if (action === 'open-record') {
+        const renderedBroken = renderCorruptToggle.checked;
+        const originalBroken = originalCorruptToggle.checked;
+        selectedRecord={theme:button.dataset.theme,date:button.dataset.date,age:button.dataset.age,originalUnavailable:originalBroken};
+        renderCorruptToggle.checked=false;
+        originalCorruptToggle.checked=false;
+        if (renderedBroken && originalBroken) go('record-corrupt');
+        else if (renderedBroken) { go('record-repairing'); setTimeout(() => go('record-detail'),1200); }
+        else go('record-detail');
+      }
+      if (action === 'export-record') { modal='export'; render(); }
+      if (action === 'export-photo' || action === 'export-file') {
+        if (singleExportFailToggle.checked) { singleExportFailToggle.checked=false; go('export-failed'); }
+        else { modal=null; render(); toast(action === 'export-photo' ? '写真アプリに保存しました' : '“ファイル”に保存しました'); }
+      }
+      if (action === 'delete-record') { modal='delete-record'; render(); }
+      if (action === 'confirm-record-delete') {
+        if (deleteFailToggle.checked) { deleteFailToggle.checked=false; go('delete-failed'); }
+        else { deletedRecordDates.add(selectedRecord.date); justSaved=false; go('records'); toast('記録を削除しました'); }
+      }
+      if (action === 'bulk-export') go('bulk-export');
+      if (action === 'bulk-photo' || action === 'bulk-file') {
+        bulkExportPartial = partialToggle.checked;
+        partialToggle.checked = false;
+        capacityContext='bulk';
+        if (capacityToggle.checked) go('capacity');
+        else { go('bulk-progress'); setTimeout(() => go('bulk-result'),1700); }
+      }
+      if (action === 'retry-bulk') {
+        bulkExportPartial=false;
+        capacityContext='bulk';
+        if (capacityToggle.checked) go('capacity');
+        else { go('bulk-progress'); setTimeout(() => go('bulk-result'),1300); }
+      }
+      if (action === 'finish-bulk') go('settings');
+      if (action === 'notifications') toast('通知設定は次のモックで追加します');
+      if (action === 'privacy') toast('プライバシー情報を表示します');
+      if (action === 'retry-capture-save') { go('capture-saving'); setTimeout(() => go('review'),900); }
+      if (action === 'delete-capture') { modal='delete-capture'; render(); }
+      if (action === 'confirm-capture-delete') { currentTheme=recommendedTheme; go('home'); toast('一時動画を削除しました'); }
+      if (action === 'retake-after-loss') { elapsed=0; go('camera'); }
+      if (action === 'home-after-loss') { currentTheme=recommendedTheme; go('home'); }
+      if (action === 'delete-corrupt-record') { modal='delete-record'; render(); }
+      if (action === 'retry-record-delete') { deletedRecordDates.add(selectedRecord.date); justSaved=false; go('records'); toast('残っていたデータを削除しました'); }
+      if (action === 'retry-record-export') { go('record-detail'); toast('動画を書き出しました'); }
+      if (action === 'record-detail-back') go('record-detail');
+      if (action === 'recheck-capacity') {
+        if (capacityToggle.checked) toast('まだ空き容量が足りません');
+        else if (capacityContext === 'record') go('camera');
+        else if (capacityContext === 'save') runGeneration();
+        else { go('bulk-progress'); setTimeout(() => go('bulk-result'),1700); }
+      }
+      if (action === 'capacity-back') {
+        if (capacityContext === 'record') { currentTheme=recommendedTheme; go('home'); }
+        else if (capacityContext === 'save') go('review');
+        else go('bulk-export');
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
